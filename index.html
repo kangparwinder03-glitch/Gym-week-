@@ -3811,7 +3811,7 @@ function renderLejog(el){
   h+=`<div class="jy-hero"><ol class="jy-route">${JY_ROUTE.map((p,i)=>`<li class="${i<hereIdx?"done":i===hereIdx?"here done":""}">${p[0]}<em>${routeOut(p[1])} ${u}</em></li>`).join("")}</ol></div>`;
   return h;
 }
-// ---- custom journeys: any start and end, route planned by Claude
+// ---- custom journeys: any start and end, distance typed by the user
 const escH=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let jyNew=false,jyBusy=false,jyErr="",jyDraft=null,jyForm={from:"",to:""};
 function walkSince(ds){let km=0;const wks=(S.history||[]).filter(h=>h.week).map(h=>h.week);if(!wks.some(w=>w===S.week))wks.push(S.week);const seen=new Set();
@@ -3827,16 +3827,16 @@ function jyPicker(){
   h+=`<button class="jy-chip add" id="jyNew">${jyNew?"✕ Close":"+ New journey"}</button></div>`;
   if(jyNew){
     h+=`<div class="jy-hero"><b class="cond" style="font-size:1.2rem">Plan a new journey</b>
-      <p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px">Type a start and an end. Claude works out a walking route and the distance.</p>${S.jyHideLejog?`<button class="linkbtn" id="jyLejogBack" style="margin:0 0 10px">Bring back Land's End → John o' Groats</button>`:""}
-      <div class="jy-form"><input id="jyFrom" placeholder="Start (e.g. Stafford)" value="${escH(jyForm.from)}" aria-label="Start"><input id="jyTo" placeholder="End (e.g. Burnley)" value="${escH(jyForm.to)}" aria-label="End">
-      <button class="btn" id="jyPlan"${jyBusy?" disabled":""}>${jyBusy?"Planning…":"Plan route"}</button></div>
+      <p style="color:var(--muted);font-size:.9rem;margin:4px 0 10px">Type a start, an end and the walking distance. A maps app will tell you the distance.</p>${S.jyHideLejog?`<button class="linkbtn" id="jyLejogBack" style="margin:0 0 10px">Bring back Land's End → John o' Groats</button>`:""}
+      <div class="jy-form"><input id="jyFrom" placeholder="Start (e.g. Stafford)" value="${escH(jyForm.from)}" aria-label="Start"><input id="jyTo" placeholder="End (e.g. Burnley)" value="${escH(jyForm.to)}" aria-label="End"><input id="jyKm" type="number" inputmode="decimal" min="1" step="1" placeholder="Distance (${DU()})" value="${escH(jyForm.km||"")}" aria-label="Distance in ${DU()}">
+      <button class="btn" id="jyPlan"${jyBusy?" disabled":""}>Set up journey</button></div>
       ${jyErr?`<p style="color:var(--accent);margin:10px 0 0">${escH(jyErr)}</p>`:""}`;
     if(jyDraft){const u=DU(),ro=k=>Math.round(kmOut(k));
       h+=`<div style="margin-top:14px"><div class="jy-big" style="font-size:1.9rem">${ro(jyDraft.km)}<small>${u} walk</small></div>
         <p style="margin:4px 0 10px;color:var(--muted)">${escH(jyDraft.from)} to ${escH(jyDraft.to)}${jyDraft.via?` · ${escH(jyDraft.via)}`:""}</p>
         <ol class="jy-route">${jyDraft.stops.map(p=>`<li>${escH(p[0])}<em>${ro(p[1])} ${u}</em></li>`).join("")}</ol>
-        <p style="color:var(--muted);font-size:.82rem;margin:4px 0 10px">Distances are estimates of a sensible walking route, not exact directions.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="jyGo">Start this journey</button><button class="btn ghost" id="jyPlan">Try another route</button></div></div>`}
+        
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="jyGo">Start this journey</button><button class="btn ghost" id="jyPlan">Update</button></div></div>`}
     h+=`</div>`}
   return h}
 function renderCustom(j){
@@ -3869,23 +3869,14 @@ function renderJourney(){
 }
 let jyArm=null,jyArmT=0;
 async function jyPlanRoute(){
-  const fe=document.getElementById("jyFrom"),te=document.getElementById("jyTo");
-  if(fe)jyForm.from=fe.value.trim();if(te)jyForm.to=te.value.trim();
-  const f=jyForm.from,to=jyForm.to;
-  if(!f||!to){jyErr="Type both a start and an end.";renderJourney();return}
-  jyBusy=true;jyErr="";jyDraft=null;renderJourney();
-  try{
-    const sample=await window.claude?.use?.("sample");if(!sample)throw {code:"none"};
-    const r=await sample.json(`You plan virtual walking journeys for a fitness app. Plan a realistic walking route from "${f}" to "${to}", following the roads, paths and towns a walker would actually pass through (not a straight line). Reply with ONLY a JSON object, no other text:
-{"from":"<the start as a proper place name>","to":"<the end as a proper place name>","via":"<a short phrase describing the route, e.g. via the Peak District>","totalKm":<walking distance in km>,"stops":[{"name":"<town or landmark>","km":<distance in km from the start>}]}
-Stops: 6 to 20 real places in order along the route, spaced fairly evenly. The first stop is the start at km 0 and the last is the end at totalKm. If either place isn't real or they can't be joined on foot, reply {"error":"<short reason>"}.`,{modelTier:"default"});
-    if(r&&r.error)throw {msg:String(r.error)};
-    const km=+r.totalKm;let st=(Array.isArray(r.stops)?r.stops:[]).map(x=>[String(x.name||"").trim().slice(0,60),+x.km]).filter(x=>x[0]&&isFinite(x[1])&&x[1]>=0&&x[1]<=km).sort((a,b)=>a[1]-b[1]).slice(0,30);
-    if(!(km>0)||st.length<2)throw {msg:"Couldn't work out that route. Check the place names and try again."};
-    st[0][1]=0;st[st.length-1][1]=km;
-    jyDraft={from:String(r.from||f).slice(0,40),to:String(r.to||to).slice(0,40),via:String(r.via||"").slice(0,60),km,stops:st};
-  }catch(e){jyErr=e&&e.msg?e.msg:e&&e.code==="not_granted"?"Planning a route needs your OK to ask Claude. Tap Plan route again and allow it.":e&&e.code==="none"?"Planning your own route isn't available in this version yet. Pick one of the ready-made journeys.":e&&e.code==="rate_limited"?"Too many requests just now. Wait a minute and try again.":"Couldn't plan that route. Check the place names and try again."}
-  jyBusy=false;renderJourney();
+ const fe=document.getElementById("jyFrom"),te=document.getElementById("jyTo"),ke=document.getElementById("jyKm");
+ if(fe)jyForm.from=fe.value.trim();if(te)jyForm.to=te.value.trim();if(ke)jyForm.km=ke.value.trim();
+ const f=jyForm.from,to=jyForm.to,d=parseFloat(jyForm.km);
+ if(!f||!to){jyErr="Type both a start and an end.";renderJourney();return}
+ if(!(d>0)||d>20000){jyErr="Type the walking distance, e.g. 120.";renderJourney();return}
+ const km=S.dist==="km"?d:d*1.609344;jyErr="";
+ jyDraft={from:f.slice(0,40),to:to.slice(0,40),via:"",km,stops:[[f.slice(0,60),0],[to.slice(0,60),km]]};
+ renderJourney();
 }
 function renderWeight(){
   const W=(S.weights||[]).slice().sort((a,b)=>a.date<b.date?-1:1);
@@ -5615,11 +5606,11 @@ function coachCard2(){const C=coachData(),A=AR();
   h+=`<ul class="co-list">${shown.map(x=>{const s=ST[x.st];return `<li><span class="co-ic" title="${s[1]}">${s[0]}</span><div><b>${esc(x.e)}</b><small>${s[1]}${x.n>1?` · ${x.pct>=0?"+":""}${Math.round(x.pct*100)}% over ${Math.min(4,x.n)} sessions`:""} · last ${x.top.w}×${x.top.r}</small></div>${x.nx?`<em>Next<b>${x.nx.w} ${S.unit} × ${x.nx.r}</b></em>`:""}</li>`}).join("")}</ul>`;
   if(list.length>6)h+=`<button class="ar-link" data-co-all>${coachAll?"Show less":`Show all ${list.length} lifts`}</button>`;
   h+=`<p class="ar-note">"Next" matches the target on your exercise cards.</p>`;
-  if(window.claude&&window.claude.use){const ai=A.coachAI;
+  if(false){const ai=A.coachAI;
     h+=`<div class="co-ai">${ai?`<small>Claude's review · ${new Date(ai.at).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</small><p>${esc(ai.summary)}</p>${(ai.tips||[]).length?`<ul>${ai.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}`:""}
       ${aiErr?`<p class="ar-msg">${esc(aiErr)}</p>`:""}<button class="btn ghost ar-btn" data-co-ai ${aiBusy?"disabled":""}>${aiBusy?"Claude is reading your training…":ai?"✨ Ask Claude again":"✨ Ask Claude for a deeper look"}</button></div>`}
   return h+`</div>`}
-async function coachAI(){if(aiBusy)return;aiBusy=true;aiErr="";render();
+async function coachAI(){return;if(aiBusy)return;aiBusy=true;aiErr="";render();
   try{const sample=await window.claude?.use?.("sample");if(!sample)throw {code:"none"};const C=coachData();
     const lifts=C.reps.map(x=>({exercise:x.e,repRange:`${repLo(x.e)}-${repHi(x.e)}`,trend:x.st,sessions:sessions(x.e).slice(-4).map(z=>`${z.d}: ${z.sets.map(q=>q.w+"x"+q.r).join(", ")}`),next:x.nx?`${x.nx.w}x${x.nx.r}`:null}));
     const data={unit:S.unit,deloadThisWeek:!!S.week.deload,hardWeeksInARow:C.run,weeklyVolume:C.weeks.map(w=>`${w.st}: ${Math.round(w.v)}`).concat([`this week so far: ${Math.round(weekVol(S.week))}`]),rankHistory:RK().hist.slice(-6).map(x=>`${x.st}: score ${x.score}, ${x.delta} RP`),cardioThisWeek:cardioState(S.week.start).mins+" of "+cardioState(S.week.start).target+" min",lifts};
@@ -10949,11 +10940,11 @@ function setupHTML(){const c=CFG()||{},w=kgNow();return `<div class="fo-card"><h
 function previewHTML(){if(!draft.trim())return "";const P=parse(draft);if(window._foAI&&window._foAI.txt===draft){P.items=P.items.concat(window._foAI.items);P.unknown=[]}const T=sum(P.items),G=grade(P.items);
   return `<div class="fo-prev">${P.items.length?`<div class="fo-pt"><span class="fo-gr" style="--gc:${GCOL[G.g]}">${G.g}</span><div><b>${Math.round(T.k)} kcal</b><small>P ${Math.round(T.p)} g · C ${Math.round(T.c)} g · F ${Math.round(T.f)} g</small></div></div>
     <ul class="fo-pl">${P.items.map(x=>`<li><span>${esc(x.n)}</span><em>${x.g} g · ${x.k} kcal</em></li>`).join("")}</ul>`:""}
-    ${P.unknown.length?`<p class="fo-unk">Didn't recognise: <b>${P.unknown.map(esc).join(", ")}</b>${window.claude&&window.claude.use?` <button class="linkbtn" data-foai ${aiBusy?"disabled":""}>${aiBusy?"Asking Claude…":"✨ Ask Claude to work it out"}</button>`:" Try a simpler name, or add grams."}</p>`:""}
+    ${P.unknown.length?`<p class="fo-unk">Didn't recognise: <b>${P.unknown.map(esc).join(", ")}</b> Try a simpler name, or add grams.</p>`:""}
     ${aiMsg?`<p class="fo-unk">${esc(aiMsg)}</p>`:""}</div>`}
 function mealHTML(m,i){const T=sum(m.items||[]),G=grade(m.items||[]);
   return `<div class="fo-meal"><div class="fo-mh"><span class="fo-gr" style="--gc:${GCOL[G.g]}">${G.g}</span><div class="fo-mtx"><b>${esc(m.type||"Meal")}</b><small>${esc(G.why)}</small></div><div class="fo-mk"><b>${Math.round(T.k)}</b><small>kcal</small></div></div>
-    <ul class="fo-items">${(m.items||[]).map((x,j)=>`<li><span>${esc(x.n)}${x.ai?' <i title="Worked out by Claude">✨</i>':""}</span><label><input type="number" inputmode="numeric" min="0" value="${x.g}" data-fog="${i}|${j}" aria-label="${esc(x.n)} grams">g</label><em>${x.k} kcal · P ${Math.round(x.p)}</em><button data-foxi="${i}|${j}" aria-label="Remove ${esc(x.n)}">✕</button></li>`).join("")}</ul>
+    <ul class="fo-items">${(m.items||[]).map((x,j)=>`<li><span>${esc(x.n)}</span><label><input type="number" inputmode="numeric" min="0" value="${x.g}" data-fog="${i}|${j}" aria-label="${esc(x.n)} grams">g</label><em>${x.k} kcal · P ${Math.round(x.p)}</em><button data-foxi="${i}|${j}" aria-label="Remove ${esc(x.n)}">✕</button></li>`).join("")}</ul>
     <div class="fo-mf"><span>P ${Math.round(T.p)} g · C ${Math.round(T.c)} g · F ${Math.round(T.f)} g · fibre ${Math.round(T.fi)} g · sugar ${Math.round(T.s)} g</span><button class="linkbtn" data-foxm="${i}">Delete meal</button></div></div>`}
 function foodHTML(){if(!CFG()||editCfg)return setupHTML();const t=targets(),d=curDay(),M=dayMeals(d),all=M.flatMap(m=>m.items||[]),T=sum(all);
   const today=d===dayISO(new Date()),nice=new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"});
@@ -11001,7 +10992,7 @@ try{ssToast(`${gone.type} deleted`)}catch(x){}return}
 document.addEventListener("input",ev=>{const t=ev.target;if(t.id==="foTxt"){draft=t.value;aiMsg="";const p=document.getElementById("foPrev");if(p)p.innerHTML=previewHTML();const b=document.querySelector("[data-foadd]");if(b)b.disabled=!draft.trim()}});
 document.addEventListener("change",ev=>{const t=ev.target;if(!t.dataset||!t.dataset.fog)return;const [i,j]=t.dataset.fog.split("|").map(Number),d=curDay(),arr=JSON.parse(JSON.stringify(dayMeals(d))),x=arr[i]&&arr[i].items[j];if(!x)return;
   const g=Math.max(0,+t.value||0),k=x.g?g/x.g:0;["k","p","c","f","fi","s"].forEach(f=>x[f]=f==="k"?Math.round(x[f]*k):r1(x[f]*k));x.g=g;setDay(d,arr);save();paintFood()});
-async function askAI(){if(aiBusy)return;const P=parse(draft);if(!P.unknown.length)return;aiBusy=true;aiMsg="";paintFood();
+async function askAI(){return;if(aiBusy)return;const P=parse(draft);if(!P.unknown.length)return;aiBusy=true;aiMsg="";paintFood();
   try{const sample=await window.claude?.use?.("sample");if(!sample)throw {code:"none"};
     const r=await sample.json(`You are a UK nutrition calculator. Estimate realistic portion sizes and nutrition for these foods someone ate: ${JSON.stringify(P.unknown)} (from the full entry: ${JSON.stringify(draft)}). Use typical UK portions unless an amount is given. Reply with ONLY JSON: {"items":[{"name":"<short food name>","grams":<number>,"kcal":<number>,"protein":<g>,"carbs":<g>,"fat":<g>,"fibre":<g>,"sugar":<g>}]}`,{modelTier:"default"});
     const its=(r&&Array.isArray(r.items)?r.items:[]).slice(0,8).map(x=>({n:String(x.name||"Food").slice(0,40),g:Math.round(+x.grams||0),k:Math.round(+x.kcal||0),p:r1(+x.protein||0),c:r1(+x.carbs||0),f:r1(+x.fat||0),fi:r1(+x.fibre||0),s:r1(+x.sugar||0),ai:1})).filter(x=>x.k>=0);
