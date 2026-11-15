@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gym Week</title>
+<style>img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <meta name="theme-color" content="#080808">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Gym Week"><meta name="application-name" content="Gym Week"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"><link rel="icon" type="image/png" sizes="32x32" href="icon-32.png"><link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1300,7 +1301,7 @@ body:is([data-tod="eve"],[data-tod="night"]) .mini-slash{box-shadow:0 0 6px #fff
 .tabs.navbar .tab{font-size:.68rem!important}
 /* gear */
 .wrap{position:relative}
-.gear{position:absolute;right:16px;top:calc(18px + env(safe-area-inset-top,0px));width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--muted);display:grid;place-items:center;cursor:pointer;z-index:2;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.gear{position:absolute;right:16px;top:18px;width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--muted);display:grid;place-items:center;cursor:pointer;z-index:2;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .gear svg{width:22px;height:22px;transition:transform .5s cubic-bezier(.3,1.4,.5,1)}.gear:active svg{transform:rotate(90deg)}
 /* progress switch */
 .pseg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:14px 0 14px;padding:4px;border-radius:16px;background:rgba(var(--s-rgb),.8);border:1px solid var(--line);position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:5;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
@@ -1452,7 +1453,7 @@ body[data-sex="f"] .wrap::after{content:"";position:absolute;right:6px;top:58px;
 body[data-sex="f"] .hero-in::before{content:"";position:absolute;left:-14px;bottom:-16px;width:120px;height:90px;pointer-events:none;opacity:.35;z-index:-1;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 90'%3E%3Cg fill='none' stroke='%23ffb3d4' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M4 88C24 66 50 54 84 50'/%3E%3Cpath d='M30 70c-3-9 3-15 10-13-1 8-5 12-10 13M54 58c2-10 10-13 15-8-4 7-9 9-15 8'/%3E%3Cg transform='translate(92 46)'%3E%3Cpath d='M0-5c4-10 12-10 12-3s-8 8-12 3M5 1c10 4 10 12 3 12S0 5 5 1M-1 5c-4 10-12 10-12 3s8-8 12-3M-5-1c-10-4-10-12-3-12s8 8 3 12'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") no-repeat center/contain}
 /* men / women switch */
-.sexsw{position:absolute;right:64px;top:calc(22px + env(safe-area-inset-top,0px));z-index:2;display:flex;gap:1px;padding:3px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+.sexsw{position:absolute;right:64px;top:22px;z-index:2;display:flex;gap:1px;padding:3px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
 .sexsw button{width:28px;height:30px;border:0;border-radius:10px;background:none;color:var(--muted);font:700 1.3rem/1 system-ui,sans-serif;cursor:pointer;transition:background .2s,color .2s}
 .sexsw button[aria-pressed="true"]{background:linear-gradient(135deg,var(--accent),var(--accent2,var(--red2)));color:#fff;box-shadow:0 4px 12px -4px var(--accent)}
 body[data-sex="f"] .gear{border-color:rgba(255,140,192,.25)}
@@ -2605,11 +2606,11 @@ const TIPS1=[
  {id:"swipe",sel:"#focus .fx-step",txt:"Swipe left or right for your other exercises.",when:()=>document.body.classList.contains("focus-on")},
  {id:"gear",sel:"#gearBtn",txt:"Units, backup and your plan are in Settings.",when:()=>tab==="gym"}];
 let tipT=null;
-function tipCheck(){clearTimeout(tipT);tipT=setTimeout(()=>{
+function tipCheck(){document.querySelectorAll(".tip1[data-tip]").forEach(x=>{const q=TIPS1.find(z=>z.id===x.dataset.tip);if(q&&!q.when())x.remove()});clearTimeout(tipT);tipT=setTimeout(()=>{
   if(document.querySelector(".tip1,#splash,#onb,.ss-pop,.pr-pop,.bu-pop"))return;S.tips=S.tips||{};
   for(const t of TIPS1){if(S.tips[t.id]||!t.when())continue;const a=document.querySelector(t.sel);if(!a)continue;const r=a.getBoundingClientRect();
     if(r.bottom<70||r.top>innerHeight-160||r.width===0)continue;
-    const el=document.createElement("div");el.className="tip1";el.innerHTML=`<span></span><button>Got it</button>`;el.querySelector("span").textContent=t.txt;
+    const el=document.createElement("div");el.className="tip1";el.dataset.tip=t.id;el.innerHTML=`<span></span><button>Got it</button>`;el.querySelector("span").textContent=t.txt;
     document.body.appendChild(el);const top=r.bottom+10+el.offsetHeight<innerHeight-90?r.bottom+10:r.top-10-el.offsetHeight;
     el.style.top=Math.max(60,top)+"px";el.style.setProperty("--ax",Math.min(Math.max(24,r.left+r.width/2-16),innerWidth-40)+"px");el.classList.toggle("up",top<r.top);
     const done=()=>{S.tips[t.id]=1;save();el.classList.add("out");setTimeout(()=>el.remove(),250)};
@@ -3883,7 +3884,7 @@ Stops: 6 to 20 real places in order along the route, spaced fairly evenly. The f
     if(!(km>0)||st.length<2)throw {msg:"Couldn't work out that route. Check the place names and try again."};
     st[0][1]=0;st[st.length-1][1]=km;
     jyDraft={from:String(r.from||f).slice(0,40),to:String(r.to||to).slice(0,40),via:String(r.via||"").slice(0,60),km,stops:st};
-  }catch(e){jyErr=e&&e.msg?e.msg:e&&e.code==="not_granted"?"Planning a route needs your OK to ask Claude. Tap Plan route again and allow it.":e&&e.code==="none"?"Route planning isn't available here. Open the app from its claude.ai link.":e&&e.code==="rate_limited"?"Too many requests just now. Wait a minute and try again.":"Couldn't plan that route. Check the place names and try again."}
+  }catch(e){jyErr=e&&e.msg?e.msg:e&&e.code==="not_granted"?"Planning a route needs your OK to ask Claude. Tap Plan route again and allow it.":e&&e.code==="none"?"Planning your own route isn't available in this version yet. Pick one of the ready-made journeys.":e&&e.code==="rate_limited"?"Too many requests just now. Wait a minute and try again.":"Couldn't plan that route. Check the place names and try again."}
   jyBusy=false;renderJourney();
 }
 function renderWeight(){
@@ -4737,11 +4738,11 @@ function showReport(W){
     try{
       const blob=await buildPdf(W),fn=`gym-week-${W.start}.pdf`;
       if(dl){await dl.save({filename:fn,data:blob});b.textContent="Saved";msg("Saved. On iPhone it goes wherever you picked in the share sheet, usually Files.")}
-      else{await saveBlob(blob,fn);b.textContent="Download PDF";msg("If no file appeared, this view can't save files. Open Gym Week in the Claude app, or screenshot this report.")}
+      else{await saveBlob(blob,fn);b.textContent="Download PDF";msg("If no file appeared, screenshot this report instead.")}
     }catch(e){
       b.textContent="Download PDF";const c=e&&e.code;
       msg(c==="declined"?"Not saved.":c==="no_lib"?"Couldn't make the PDF. Check you have signal and try again.":c==="rate_limited"?"A save is already waiting for you to confirm.":
-        c==="unavailable"||c==="not_granted"||c==="capability_disabled"?"This view can't save files. Open Gym Week in the Claude app, or screenshot this report.":"Couldn't save the PDF"+(c?` (${c})`:"")+". Try again, or screenshot this report.")}
+        c==="unavailable"||c==="not_granted"||c==="capability_disabled"?"This view can't save files. Screenshot this report instead.":"Couldn't save the PDF"+(c?` (${c})`:"")+". Try again, or screenshot this report.")}
     b.disabled=false;
   });
   el.querySelector(".ss-x").focus();
@@ -5923,7 +5924,7 @@ async function showSnaps(){document.querySelector(".sn-pop")?.remove();const el=
   [...cloud,...local].forEach(x=>window._snRows[x.id]=x);
   const now=stats(S),row=x=>`<li><div><b>${when(x.at)}</b><small>${KIND[x.kind]||"Snapshot"} · ${x.sets} sets · ${x.weeks} week${x.weeks===1?"":"s"}${local.includes(x)?" · on this phone":""}</small></div><button data-sn="${x.id}">Restore</button></li>`;
   const list=[...cloud,...local];
-  el.querySelector("#snBody").innerHTML=`<p class="sn-sum">Right now: <b>${now.sets} sets</b> across <b>${now.weeks} week${now.weeks===1?"":"s"}</b>. ${cloudOK?"Snapshots are taken automatically every day and every week, and kept privately in your account.":"You're offline or outside Claude, so snapshots are kept on this phone only."}</p>
+  el.querySelector("#snBody").innerHTML=`<p class="sn-sum">Right now: <b>${now.sets} sets</b> across <b>${now.weeks} week${now.weeks===1?"":"s"}</b>. ${cloudOK?"Snapshots are taken automatically every day and every week, and kept privately in your account.":"Snapshots are kept on this phone only."}</p>
     ${list.length?`<ul class="sn-list">${list.map(row).join("")}</ul>`:`<p class="sn-sum">No snapshots yet. The first one is taken automatically once you've logged a workout.</p>`}
     <p class="sn-note">Restoring brings back anything that went missing. Workouts you've logged since are kept, and the current state is saved as a snapshot first, so a restore can always be undone. For extra safety, use <b>Backup data</b> in Settings now and then to save a file to your phone or cloud drive.</p>`}
 async function restore(b){const m=document.getElementById("snMsg");
@@ -6072,7 +6073,7 @@ body[data-look="extra"] .tally,body[data-look="extra"] .lasttime,body[data-look=
 (function(){
 const LOOKS=[["dark","Dark"],["normal","Normal"],["extra","Extra"]];
 const meta=()=>document.querySelector('meta[name="theme-color"]');
-function applyLook(){if(!S)return;const l=S.look==="dark"||S.look==="extra"?S.look:"normal";
+function applyLook(){if(!S)return;if(S.look&&!["dark","extra","normal"].includes(S.look))return;const l=S.look==="dark"||S.look==="extra"?S.look:"normal";
   if(document.body.dataset.look!==l)document.body.dataset.look=l;
   if(l==="dark"){const m=meta();if(m)m.setAttribute("content","#121212")}}
 const _render=render;render=function(){let r;try{r=_render.apply(this,arguments)}catch(gwE){gwErr("render",gwE)}try{applyLook()}catch(e){}return r};
@@ -7679,7 +7680,7 @@ showSettings=function(){let r;try{r=_ss2.apply(this,arguments)}catch(e){gwErr("s
       if(k==="clear"){localStorage.removeItem("gymweek:errlog");paint(sec)}
       else if(k==="copy"){const txt=report();try{await navigator.clipboard.writeText(txt);b.textContent="Copied"}catch(e){prompt("Copy this report:",txt)}}
       else if(k==="check"){b.textContent="Checking…";const R=await check();const pass=R.every(x=>x[1]);paint(sec);
-        sec.querySelector("#ghOut").innerHTML=R.map(([n,ok])=>`<li class="${ok?"ok":"no"}"><b>${ok?"✓":"✗"}</b>${esc(n)}</li>`).join("")+`<li class="${pass?"ok":"no"}"><b>${pass?"✓":"!"}</b><strong>${pass?"Everything is working":"Something needs a look. Tap Copy report and send it to Claude."}</strong></li>`}})}}catch(e){gwErr("app health",e)}
+        sec.querySelector("#ghOut").innerHTML=R.map(([n,ok])=>`<li class="${ok?"ok":"no"}"><b>${ok?"✓":"✗"}</b>${esc(n)}</li>`).join("")+`<li class="${pass?"ok":"no"}"><b>${pass?"✓":"!"}</b><strong>${pass?"Everything is working":"Something needs a look. Tap Copy report and send it to the Gym Week team."}</strong></li>`}})}}catch(e){gwErr("app health",e)}
   return r};
 window.gymHealth={check,report};
 })();
@@ -7807,7 +7808,7 @@ async function send(force){if(sending||!S.ptShare||!S.ptShare.code||!SUB)return 
     await db.doc("pt/"+id).set(await seal(S.ptShare.code,snap));lastJson=j;try{localStorage.setItem("gymweek:ptsent",String(Date.now()))}catch(e){}
     S.ptShare.err="";sending=false;paintAll();return true}
   catch(e){sending=false;if(e&&e.code!=="no_db")gwErr("pt send",e);
-    S.ptShare.err=writeErr(e)?"This account can't share from this link. Open Gym Week from your own account (the person who made it), or ask them to give you “Can interact” access.":e&&e.code==="no_db"?"Sharing needs your Gym Week account. Open the app from its claude.ai link.":"Couldn't send just now. It will try again automatically.";
+    S.ptShare.err=writeErr(e)?"This account can't share from this link. Open Gym Week from your own account (the person who made it), or ask them to give you “Can interact” access.":e&&e.code==="no_db"?"Sharing with a PT needs an online account, which is coming in a future update.":"Couldn't send just now. It will try again automatically.";
     paintAll();return false}}
 const sv0=save;save=function(){const r=sv0.apply(this,arguments);try{schedule()}catch(e){}return r};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible"&&S&&S.ptShare&&S.ptShare.code){clearTimeout(sendT);send()}});
@@ -7869,7 +7870,7 @@ let view={c:null};
 function dash(){const sx=document.querySelector(".st-pop .ss-x");if(sx)sx.click();document.querySelector(".ptd")?.remove();const el=document.createElement("div");el.className="ptd";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.setAttribute("aria-label","PT dashboard");
   document.body.appendChild(el);document.body.style.overflow="hidden";view={c:null};draw();refreshAll()}
 function close(){document.querySelector(".ptd")?.remove();document.body.style.overflow=""}
-async function refreshAll(){await Promise.all(clients().map(c=>fetchClient(c.code).catch(e=>{cache[norm(c.code)]={err:e&&e.code==="no_db"?"Open Gym Week from its claude.ai link to load clients.":"Couldn't read this client. Check the code."};gwErr("pt fetch",e)})));draw()}
+async function refreshAll(){await Promise.all(clients().map(c=>fetchClient(c.code).catch(e=>{cache[norm(c.code)]={err:e&&e.code==="no_db"?"PT mode needs an online account, which is coming in a future update.":"Couldn't read this client. Check the code."};gwErr("pt fetch",e)})));draw()}
 function draw(){const el=document.querySelector(".ptd");if(!el)return;gwSafe("pt dashboard",()=>{el.innerHTML=`<div class="ptd-in">${view.c?detail(view.c):list()}</div>`},()=>{el.innerHTML=`<div class="ptd-in"><p class="ptd-empty">Something went wrong showing this client.</p><button class="ptd-btn" data-ptd="back">Back</button></div>`})}
 function list(){const C=clients();
   return `<header class="ptd-hd"><div><small>PT mode</small><h2>Your clients</h2></div><button class="ptd-x" data-ptd="close" aria-label="Close">✕</button></header>
@@ -8031,7 +8032,7 @@ async function pull(role,code){code=codeFor(role,code);if(!code||!P())return [];
     for(const d of (q.docs||[])){try{const m=await P().unseal(code,d.data());if(m&&m.t)out.push(m)}catch(e){}}
     try{const old=await db.doc("ptnotes/"+id).get();if(old.exists){const o=await P().unseal(code,old.data());(o&&o.list||[]).forEach(n=>out.push({id:"note"+n.t,t:n.t,from:"pt",txt:n.txt}))}}catch(e){}
     out.sort((a,b)=>a.t-b.t);TH[k]={msgs:out,at:Date.now()};return out}
-  catch(e){gwErr("chat pull",e);TH[k]=Object.assign(TH[k]||{msgs:[]},{err:e&&e.code==="no_db"?"Messages need your Gym Week account.":"Couldn't load messages."});return TH[k].msgs}}
+  catch(e){if(!e||e.code!=="no_db")gwErr("chat pull",e);TH[k]=Object.assign(TH[k]||{msgs:[]},{err:e&&e.code==="no_db"?"Messages need your Gym Week account.":"Couldn't load messages."});return TH[k].msgs}}
 function unread(role,code){const c=codeFor(role,code);if(!c)return 0;const k=keyOf(role,P().norm(c)),T=TH[k];if(!T)return 0;const other=role==="client"?"pt":"client",s=seen()[k]||0;
   return T.msgs.filter(m=>m.from===other&&m.t>s).length}
 function markSeen(role,code){const c=codeFor(role,code);if(!c)return;const k=keyOf(role,P().norm(c)),T=TH[k];if(!T||!T.msgs.length)return;const last=T.msgs[T.msgs.length-1].t;
